@@ -1,0 +1,79 @@
+version: 2.1
+
+orbs:
+  go: circleci/go@1.7.1
+  vulnmap: khulnasoft-lab/vulnmap@1.4.0
+  prodsec: vulnmap/prodsec-orb@1.0
+
+jobs:
+  unit-test:
+    executor:
+      name: go/default
+      tag: '1.19'
+    steps:
+      - checkout
+      - go/load-cache
+      - go/mod-download
+      - go/save-cache
+      - go/test:
+          covermode: atomic
+          failfast: true
+          race: true
+  lint:
+    docker:
+      - image: golangci/golangci-lint:v1.50-alpine
+    steps:
+      - checkout
+      - run: golangci-lint run -v ./...
+  vulnmap-scan:
+    parameters:
+      monitor:
+        type: boolean
+        default: false
+    resource_class: medium
+    executor:
+      name: go/default
+      tag: '1.19'
+    steps:
+      - checkout
+      - setup_remote_docker
+      - vulnmap/scan:
+          fail-on-issues: true
+          severity-threshold: high
+          monitor-on-build: << parameters.monitor >>
+      - vulnmap/scan:
+          command: code test
+          fail-on-issues: true
+          severity-threshold: high
+          monitor-on-build: false
+
+workflows:
+  version: 2
+  CI:
+    jobs:
+      - prodsec/secrets-scan:
+          name: Scan repository for secrets
+          context:
+            - vulnmap-bot-slack
+          channel: team-link-pipeline-info
+      - unit-test:
+          name: Unit Test
+      - lint:
+          name: Linting
+      - vulnmap-scan:
+          name: vulnmap Scan branch
+          context:
+            - vulnmap-token-team-link
+          filters:
+            branches:
+              ignore:
+                - main
+      - vulnmap-scan:
+          name: vulnmap Scan and Monitor
+          monitor: true
+          context:
+            - vulnmap-token-team-link
+          filters:
+            branches:
+              only:
+                - main

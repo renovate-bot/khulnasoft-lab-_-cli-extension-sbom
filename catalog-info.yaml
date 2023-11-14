@@ -1,0 +1,8 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: cli-extension-sbom
+spec:
+  type: vulnmap-cli-plugin
+  lifecycle: "-"
+  owner: link
