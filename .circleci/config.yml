@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  go: circleci/go@1.7.1
+  go: circleci/go@1.9.0
   vulnmap: khulnasoft-lab/vulnmap@1.4.0
   prodsec: vulnmap/prodsec-orb@1.0
 
